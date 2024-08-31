@@ -23,31 +23,29 @@ class UsuarioController {
 
     login(req, res) {
         const { email, senha } = req.body;
-
+    
         database.query('SELECT * FROM optbusao.usuarios WHERE email = ?', [email], (error, results) => {
             const usuario = results[0];
-            console.log(usuario);
             const senhaCorreta = bcrypt.compareSync(senha, usuario.senha); // Verifica se a senha está correta
-
+    
             if (error) {
                 console.error(error);
                 res.status(500).json({ error: 'Erro interno do servidor' });
                 return;
             }
-
+    
             if (results.length === 0) {
                 res.status(401).json({ error: 'Credenciais inválidas' });
                 return;
             }
-
+    
             if (!senhaCorreta) {
                 res.status(401).json({ error: 'Senha inválidas' });
                 return;
             }
-
-            const token = jwt.sign({ id: usuario.id }, 'chave-secreta'); // Gera o token JWT
-
-            res.json({ id: usuario.id, token });
+    
+            const token = jwt.sign({ id: usuario.id }, 'chave-secreta');
+            res.json({ id: usuario.id, token, is_adm: usuario.is_adm }); // is_adm ta no Json
         });
     }
 

@@ -21,6 +21,22 @@ class NotificacaoController {
         );
     }
 
+
+    getAll(req,res){
+        const query = 'SELECT * FROM optbusao.notificacoes';
+
+        database.query(query, (error, results) => {
+            if (error) {
+                console.error(error);
+                res.status(500).json({ error: 'Erro interno do servidor' });
+                return;
+            }
+
+            console.log(results);
+            res.json(results);
+        });
+    }
+
     getById(req, res) {
         const { id } = req.params;
         const query = 'SELECT * FROM optbusao.notificacoes WHERE id = ?';
@@ -39,6 +55,26 @@ class NotificacaoController {
 
             const usuario = results[0];
             res.json(usuario);
+        });
+    }
+
+    getByUserId(req, res) {
+        const { idUser } = req.params;
+        const query = 'SELECT * FROM optbusao.notificacoes WHERE idUser = ?';
+    
+        database.query(query, [idUser], (error, results) => {
+            if (error) {
+                console.error(error);
+                res.status(500).json({ error: 'Erro interno do servidor' });
+                return;
+            }
+    
+            if (results.length === 0) {
+                res.status(404).json({ error: 'Nenhuma notificação encontrada' });
+                return;
+            }
+    
+            res.json(results);
         });
     }
 
