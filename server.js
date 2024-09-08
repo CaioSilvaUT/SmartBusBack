@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const port = 3000;
-const routes = require('./Controllers/routes');
+const routes = require('./Controllers/routes'); // Verifique o caminho
 const multer = require('multer');
 const path = require('path');
 
@@ -24,24 +24,21 @@ app.use(express.json());
 // Diretório para servir arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-
+// Aplicar as rotas
 app.use('/Controllers', routes);
 
 // Endpoint para upload de PDF
 app.post('/uploadPdf', upload.single('file'), (req, res) => {
   try {
-    // Suponha que você esteja processando o arquivo aqui
     const tipo = req.body.tipo; 
     if (!tipo) {
       return res.status(400).send('Tipo de cartão não especificado.');
     }
 
-    // Verifica se o arquivo foi enviado
     if (!req.file) {
       return res.status(400).send('Nenhum arquivo enviado.');
     }
 
-    // Exemplo de lógica de processamento do arquivo...
     console.log('Arquivo recebido:', req.file);
     console.log('Tipo de cartão:', tipo);
 
@@ -52,7 +49,6 @@ app.post('/uploadPdf', upload.single('file'), (req, res) => {
   }
 });
 
-
 app.listen(port, () => {
-    console.log('Aplicacao rodando na porta 3000');
+    console.log(`Aplicação rodando na porta ${port}`);
 });

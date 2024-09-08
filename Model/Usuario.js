@@ -1,64 +1,59 @@
-const database = require('../database/connection');
+const { getConnection } = require('../database/connection');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 
-class UsuarioController {
-    newUser(req, res) {
+class UsuarioModel {
+    async newUser(req, res) {
         const { nome, email, senha, telefone, is_adm } = req.body;
         const hashedSenha = bcrypt.hashSync(senha, 10); // Hash da senha
-        database.query(
-            'INSERT INTO optbusao.usuarios (nome, email, senha, telefone, is_adm) VALUES (?, ?, ?, ?, ?)',
-            [nome, email, hashedSenha, telefone, is_adm],
-            (err, results) => {
-                if (err) {
-                    console.error(err);
-                    res.status(401).json({ error: 'Erro interno do servidor' });
-                    return;
-                }
-                console.log(results);
-                res.json(results);
-            }
-        );
+
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query(
+                'INSERT INTO usuarios (nome, email, senha, telefone, is_adm) VALUES (?, ?, ?, ?, ?)',
+                [nome, email, hashedSenha, telefone, is_adm]
+            );
+            console.log(results);
+            res.json(results);
+        } catch (err) {
+            console.error(err);
+            res.status(401).json({ error: 'Erro interno do servidor' });
+        }
     }
 
-    login(req, res) {
+    async login(req, res) {
         const { email, senha } = req.body;
-    
-        database.query('SELECT * FROM optbusao.usuarios WHERE email = ?', [email], (error, results) => {
+
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query('SELECT * FROM usuarios WHERE email = ?', [email]);
             const usuario = results[0];
             const senhaCorreta = bcrypt.compareSync(senha, usuario.senha); // Verifica se a senha está correta
-    
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
-    
+
             if (results.length === 0) {
                 res.status(401).json({ error: 'Credenciais inválidas' });
                 return;
             }
-    
+
             if (!senhaCorreta) {
                 res.status(401).json({ error: 'Senha inválidas' });
                 return;
             }
-    
+
             const token = jwt.sign({ id: usuario.id }, 'chave-secreta');
-            res.json({ id: usuario.id, token, is_adm: usuario.is_adm }); // is_adm ta no Json
-        });
+            res.json({ id: usuario.id, token, is_adm: usuario.is_adm }); // is_adm tá no JSON
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
     }
 
-    showUserById(req, res) {
+    async showUserById(req, res) {
         const { id } = req.params;
-        const query = 'SELECT * FROM optbusao.usuarios WHERE id = ?';
 
-        database.query(query, [id], (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query('SELECT * FROM usuarios WHERE id = ?', [id]);
 
             if (results.length === 0) {
                 res.status(404).json({ error: 'Usuário não encontrado' });
@@ -67,79 +62,68 @@ class UsuarioController {
 
             const usuario = results[0];
             res.json(usuario);
-        });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
     }
 
-    showUser(req, res) {
-        const query = 'SELECT * FROM optbusao.usuarios';
-
-        database.query(query, (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
-
+    async showUser(req, res) {
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query('SELECT * FROM usuarios');
             console.log(results);
             res.json(results);
-        });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
     }
 
-    deleteUser(req, res) {
+    async deleteUser(req, res) {
         const { id } = req.params;
 
-        // Check if the user exists
-        database.query('SELECT * FROM optbusao.usuarios WHERE id = ?', [id], (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query('SELECT * FROM usuarios WHERE id = ?', [id]);
 
             if (results.length === 0) {
                 res.status(404).json({ error: 'Usuário não encontrado' });
                 return;
             }
 
-            // Delete the user
-            database.query('DELETE FROM optbusao.usuarios WHERE id = ?', [id], (deleteError) => {
-                if (deleteError) {
-                    console.error(deleteError);
-                    res.status(500).json({ error: 'Erro ao deletar o usuário' });
-                    return;
-                }
-
-                res.json({ message: 'Usuário deletado com sucesso' });
-            });
-        });
+            await connection.query('DELETE FROM usuarios WHERE id = ?', [id]);
+            res.json({ message: 'Usuário deletado com sucesso' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro ao deletar o usuário' });
+        }
     }
 
-    updateUser(req, res) {
+    async updateUser(req, res) {
         const { nome, email, telefone, senha } = req.body; // Incluindo a senha
         const { id } = req.params;
 
-        // Cria um array de valores para atualização
-        const values = [nome, email, telefone, id];
-        let query = 'UPDATE optbusao.usuarios SET nome = ?, email = ?, telefone = ?';
+        try {
+            const connection = await getConnection();
+            let query = 'UPDATE usuarios SET nome = ?, email = ?, telefone = ?';
+            const values = [nome, email, telefone, id];
 
-        // Verifique se a senha foi fornecida
-        if (senha) {
-            const hashedSenha = bcrypt.hashSync(senha, 10); // Hash da nova senha
-            query += ', senha = ?'; // Adiciona a parte da senha à consulta
-            values.splice(3, 0, hashedSenha); // Insere o hash da senha no array de valores
-        }
-
-        query += ' WHERE id = ?';
-
-        database.query(query, values, (err, results) => {
-            if (err) {
-                console.error(err);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
+            if (senha) {
+                const hashedSenha = bcrypt.hashSync(senha, 10); // Hash da nova senha
+                query += ', senha = ?';
+                values.splice(3, 0, hashedSenha);
             }
-            res.json(results);
-        });
+
+            query += ' WHERE id = ?';
+
+            await connection.query(query, values);
+            res.json({ message: 'Usuário atualizado com sucesso' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
     }
 }
 
-module.exports = new UsuarioController();
+module.exports = new UsuarioModel();
