@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const cors = require('cors');
 const port = 3000;
-const routes = require('./routes');
+const routes = require('./Controllers/routes');
 const multer = require('multer');
 const path = require('path');
 
@@ -18,17 +18,14 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// Importa o controlador de upload (não parece estar sendo usado no código, então remova se desnecessário)
-// const uploadController = require('./controllers/upload-controller');
-
 app.use(cors());
 app.use(express.json());
 
 // Diretório para servir arquivos estáticos
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Usa as rotas definidas no arquivo routes.js
-app.use('/', routes);
+
+app.use('/Controllers', routes);
 
 // Endpoint para upload de PDF
 app.post('/uploadPdf', upload.single('file'), (req, res) => {

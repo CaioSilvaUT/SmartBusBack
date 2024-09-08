@@ -3,7 +3,7 @@ const express = require("express");
 const router = express.Router();
 const UsuarioController = require("../Model/Usuario.js");
 const NotificacaoController = require("../Model/Notificacao.js");
-const CartaoController = require("./Model/Cartao.js");
+const CartaoController = require("../Model/Cartao.js");
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // Diretório de destino para os arquivos
 
