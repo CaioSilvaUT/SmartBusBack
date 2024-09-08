@@ -1,7 +1,6 @@
-const database = require('../database/connection');
+const { getConnection } = require('../database/connection');
 const multer = require('multer');
 const path = require('path');
-
 
 // Configuração do Multer para upload de PDFs
 const upload = multer({
@@ -15,344 +14,294 @@ const upload = multer({
             return cb(null, true);
         }
         cb('Apenas arquivos PDF são permitidos!');
-        exports.upload = upload;
     }
 });
 
-class CartaoController {
-    create(req, res) {
+class CartaoNodel {
+    async create(req, res) {
         const { idUser, dataCriacao, dataVencimento, valor, tipo } = req.body;
-    
-        // Verifica se já existe um cartão com o idUser fornecido
-        database.query(
-            'SELECT * FROM optbusao.cartoes WHERE idUser = ?',
-            [idUser],
-            (err, results) => {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).json({ error: 'Erro interno do servidor' });
-                }
-                
-                // Se resultados não forem vazios, significa que já existe um cartão
-                if (results.length > 0) {
-                    return res.status(400).json({ error: 'Já existe um cartão para este usuário.' });
-                }
-    
-                // Caso não exista, insere o novo cartão
-                database.query(
-                    'INSERT INTO optbusao.cartoes (idUser, dataCriacao, dataVencimento, valor, tipo) VALUES (?, ?, ?, ?, ?)',
-                    [idUser, dataCriacao, dataVencimento, valor, tipo],
-                    (err, results) => {
-                        if (err) {
-                            console.error(err);
-                            res.status(500).json({ error: 'Erro interno do servidor' });
-                            return;
-                        }
-                        console.log(results);
-                        res.status(201).json({ message: 'Cartão criado com sucesso!', cardId: results.insertId });
-                    }
-                );
-            }
-        );
-    }
 
-    getByIdUser(req, res) {
-        const { id } = req.params; 
-        const query = 'SELECT * FROM optbusao.cartoes WHERE idUser = ?';
-        
-        database.query(query, [id], (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
-    
-            if (results.length === 0) {
-                res.json(null);
-                return;
-            }
-    
-            const cartao = results[0];
-            res.json(cartao);
-        });
-    }
+        try {
+            const connection = await getConnection();
 
-    getById(req, res) {
-        const { id } = req.params;
-        const query = 'SELECT * FROM optbusao.cartoes WHERE id = ?';
-
-        database.query(query, [id], (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
-
-            if (results.length === 0) {
-                res.status(404).json({ error: 'cartão não encontrado' });
-                return;
-            }
-
-            const usuario = results[0];
-            res.json(usuario);
-        });
-    }
-
-    delete(req, res) {
-        const { id } = req.params;
-
-        // Check if the user exists
-        database.query('SELECT * FROM optbusao.cartoes WHERE id = ?', [id], (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
-            }
-
-            if (results.length === 0) {
-                res.status(404).json({ error: 'cartão não encontrado' });
-                return;
-            }
-
-            // Delete the user
-            database.query('DELETE FROM optbusao.cartoes WHERE id = ?', [id], (deleteError) => {
-                if (deleteError) {
-                    console.error(deleteError);
-                    res.status(500).json({ error: 'Erro ao deletar o cartão' });
-                    return;
-                }
-
-                res.json({ message: 'cartão deletado com sucesso' });
-            });
-        });
-    }
-
-    createTable(req, res) {
-        const createTableQuery = `
-            CREATE TABLE IF NOT EXISTS cartoes (
-                idUser INT NOT NULL,
-                dataCriacao DATETIME NOT NULL,
-                dataVencimento DATETIME NOT NULL,
-                valor DECIMAL(10, 2) NOT NULL,
-                tipo VARCHAR(50) NOT NULL,
-                PRIMARY KEY (idUser)
+            // Verifica se já existe um cartão com o idUser fornecido
+            const [results] = await connection.query(
+                'SELECT * FROM cartoes WHERE idUser = ?',
+                [idUser]
             );
-        `;
-    
-        database.query(createTableQuery, (error, results) => {
-            if (error) {
-                console.error(error);
-                res.status(500).json({ error: 'Erro interno do servidor' });
-                return;
+
+            if (results.length > 0) {
+                return res.status(400).json({ error: 'Já existe um cartão para este usuário.' });
             }
-    
-            res.json({ message: 'Tabela cartoes criada com sucesso' });
-        });
+
+            // Caso não exista, insere o novo cartão
+            const [insertResults] = await connection.query(
+                'INSERT INTO cartoes (idUser, dataCriacao, dataVencimento, valor, tipo) VALUES (?, ?, ?, ?, ?)',
+                [idUser, dataCriacao, dataVencimento, valor, tipo]
+            );
+
+            res.status(201).json({ message: 'Cartão criado com sucesso!', cardId: insertResults.insertId });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
     }
 
-    
+    async getByIdUser(req, res) {
+        const { id } = req.params; 
+        const query = 'SELECT * FROM cartoes WHERE idUser = ?';
 
-    debitar(req, res) {
-        const { idUser } = req.params; 
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query(query, [id]);
+
+            if (results.length === 0) {
+                return res.json(null);
+            }
+
+            res.json(results[0]);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
+    }
+
+    async getById(req, res) {
+        const { id } = req.params;
+        const query = 'SELECT * FROM cartoes WHERE id = ?';
+
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query(query, [id]);
+
+            if (results.length === 0) {
+                return res.status(404).json({ error: 'Cartão não encontrado' });
+            }
+
+            res.json(results[0]);
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
+    }
+
+    async delete(req, res) {
+        const { id } = req.params;
+
+        try {
+            const connection = await getConnection();
+
+            // Check if the card exists
+            const [results] = await connection.query('SELECT * FROM cartoes WHERE id = ?', [id]);
+            if (results.length === 0) {
+                return res.status(404).json({ error: 'Cartão não encontrado' });
+            }
+
+            // Delete the card
+            await connection.query('DELETE FROM cartoes WHERE id = ?', [id]);
+            res.json({ message: 'Cartão deletado com sucesso' });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ error: 'Erro ao deletar o cartão' });
+        }
+    }
+
+
+    async debitar(req, res) {
+        const { idCartao } = req.params; 
         const valor = 2.00;
-
-        
-        // Verifica se já existe um cartão com o idUser fornecido
-        database.query(
-            'SELECT * FROM optbusao.cartoes WHERE idUser = ?',
-            [idUser],
-            (err, results) => {
-                
-                const saldoAtual = results[0].valor;
-                const novoSaldo = saldoAtual - valor;
-                console.log(novoSaldo);
-                // Caso não exista, insere o novo cartão
-                database.query(
-                    'UPDATE optbusao.cartoes SET valor = ? WHERE idUser = ?',
-                    [novoSaldo, idUser],
-                    (err, results) => {
-                        if (err) {
-                            console.error(err);
-                            res.status(500).json({ error: 'Erro interno do servidor' });
-                            return;
-                        }
-                        console.log(results);
-                        res.status(201).json({ message: 'Cartão ATUALZIADO com sucesso!', cardId: idUser});
-                    }
-                );
+    
+        try {
+            const connection = await getConnection();
+    
+            // Verifica se o cartão existe
+            const [cartaoResults] = await connection.query(
+                'SELECT * FROM cartoes WHERE id = ?',
+                [idCartao]
+            );
+    
+            if (cartaoResults.length === 0) {
+                return res.status(404).json({ error: 'Cartão não encontrado' });
             }
-        );
-      
+    
+            const cartao = cartaoResults[0];
+            const saldoAtual = cartao.valor;
+            const novoSaldo = saldoAtual - valor;
+    
+            if (novoSaldo < 0) {
+                return res.status(400).json({ error: 'Saldo insuficiente' });
+            }
+    
+            // Atualiza o saldo do cartão
+            await connection.query(
+                'UPDATE cartoes SET valor = ? WHERE id = ?',
+                [novoSaldo, idCartao]
+            );
+    
+            // Registra a viagem no histórico
+            await connection.query(
+                'INSERT INTO historico_viagens (idUser, idCartao, data_viagem, origem, destino, valor) VALUES (?, ?, NOW(), "UTFPR", "Terminal", ?)',
+                [cartao.idUser, idCartao, valor]
+            );
+    
+            res.status(200).json({ message: 'Débito realizado com sucesso!', cardId: idCartao });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro interno do servidor' });
+        }
     }
 
-    // Rota para solicitar um cartão com PDF de dados
-    solicitarCartao(req, res) {
+    async solicitarCartao(req, res) {
         const { idUser } = req.params;
         const { tipo } = req.body; // Obtenha o tipo do cartão do corpo da requisição
-    
-        // Verifica se o arquivo foi enviado
+
         if (!req.file) {
             return res.status(400).json({ error: 'Nenhum arquivo foi enviado.' });
         }
-    
+
         if (!tipo) {
             return res.status(400).json({ error: 'O tipo de cartão é obrigatório.' });
         }
-    
+
         const pdfPath = req.file.path;
-    
-        // Insere a solicitação no banco de dados
-        const query = `
-            INSERT INTO solicitacoes_cartao (idUser, pdfPath, tipo, status) 
-            VALUES (?, ?, ?, 'pendente')
-        `;
-        database.query(query, [idUser, pdfPath, tipo], (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Erro ao salvar a solicitação.' });
-            }
+
+        try {
+            const connection = await getConnection();
+            const query = `
+                INSERT INTO solicitacoes_cartao (idUser, pdfPath, tipo, status) 
+                VALUES (?, ?, ?, 'pendente')
+            `;
+            const [results] = await connection.query(query, [idUser, pdfPath, tipo]);
             res.status(201).json({ message: 'Solicitação de cartão enviada com sucesso!', requestId: results.insertId });
-        });
-    }
-    
-    // Rota para o administrador ver todas as solicitações pendentes
-    getSolicitacoesPendentes(req, res) {
-        const query = 'SELECT * FROM solicitacoes_cartao WHERE status = "pendente"';
-        database.query(query, (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Erro ao buscar solicitações.' });
-            }
-            res.json(results);
-        });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro ao salvar a solicitação.' });
+        }
     }
 
-    // Rota para aprovar ou rejeitar uma solicitação
-    processarSolicitacao(req, res) {
+    async getSolicitacoesPendentes(req, res) {
+        const query = 'SELECT * FROM solicitacoes_cartao WHERE status = "pendente"';
+
+        try {
+            const connection = await getConnection();
+            const [results] = await connection.query(query);
+            res.json(results);
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro ao buscar solicitações.' });
+        }
+    }
+
+    async processarSolicitacao(req, res) {
         const { id } = req.params;
-        const { status } = req.body; // 'aprovado' ou 'rejeitado'
-    
+        const { status } = req.body;
+
         if (!['aprovado', 'rejeitado'].includes(status)) {
             return res.status(400).json({ error: 'Status inválido.' });
         }
-    
-        const queryUpdateStatus = 'UPDATE solicitacoes_cartao SET status = ? WHERE id = ?';
-        
-        // Primeiro, atualizamos o status da solicitação
-        database.query(queryUpdateStatus, [status, id], (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Erro ao processar a solicitação.' });
-            }
-    
-            // Se a solicitação for aprovada, criamos o cartão
+
+        try {
+            const connection = await getConnection();
+
+            // Atualizar status da solicitação
+            await connection.query('UPDATE solicitacoes_cartao SET status = ? WHERE id = ?', [status, id]);
+
             if (status === 'aprovado') {
-                const queryGetSolicitacao = 'SELECT idUser, tipo FROM solicitacoes_cartao WHERE id = ?';
-                
-                database.query(queryGetSolicitacao, [id], (err, results) => {
-                    if (err || results.length === 0) {
-                        console.error(err);
-                        return res.status(500).json({ error: 'Erro ao buscar detalhes da solicitação.' });
-                    }
-    
-                    const { idUser, tipo } = results[0];
-                    const dataCriacao = new Date(); // data atual
-                    const dataVencimento = new Date();
-                    dataVencimento.setFullYear(dataVencimento.getFullYear() + 1); // 1 ano de validade
-                    const valorInicial = 0.0;
-    
-                    const queryCreateCartao = 
-                        'INSERT INTO optbusao.cartoes (idUser, dataCriacao, dataVencimento, valor, tipo) VALUES (?, ?, ?, ?, ?)';
-    
-                    database.query(queryCreateCartao, [idUser, dataCriacao, dataVencimento, valorInicial, tipo], (err, results) => {
-                        if (err) {
-                            console.error(err);
-                            return res.status(500).json({ error: 'Erro ao criar o cartão.' });
-                        }
-                        res.json({ message: `Solicitação aprovada e cartão criado com sucesso para o usuário ${idUser}.` });
-                    });
-                });
+                // Se a solicitação for aprovada, renovamos o cartão
+                const [solicitacaoResults] = await connection.query('SELECT idUser FROM solicitacoes_cartao WHERE id = ?', [id]);
+                if (solicitacaoResults.length === 0) {
+                    return res.status(500).json({ error: 'Erro ao buscar solicitação.' });
+                }
+
+                const { idUser } = solicitacaoResults[0];
+                const novaDataVencimento = new Date();
+                novaDataVencimento.setFullYear(novaDataVencimento.getFullYear() + 1);
+
+                await connection.query(
+                    'UPDATE cartoes SET dataVencimento = ? WHERE idUser = ?',
+                    [novaDataVencimento, idUser]
+                );
+
+                res.json({ message: 'Cartão renovado com sucesso.' });
             } else {
                 res.json({ message: `Solicitação ${status} com sucesso.` });
             }
-        });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro ao processar solicitação.' });
+        }
     }
-    
-    getHistoricoViagens(req, res) {
-        const { idUser } = req.params;
-    
-        // Busca o cartão do usuário
-        database.query(
-            'SELECT * FROM optbusao.cartoes WHERE idUser = ?',
-            [idUser],
-            (err, results) => {
-                if (err || results.length === 0) {
-                    console.error(err);
-                    return res.status(500).json({ error: 'Erro ao buscar cartão ou cartão não encontrado.' });
-                }   
-                const idCartao = results[0].id;
-                database.query(
-                    'SELECT * FROM optbusao.viagens WHERE idCartao = ? ORDER BY data DESC',
-                    [idCartao],
-                    (err, viagens) => {
-                        if (err) {
-                            console.error(err);
-                            return res.status(500).json({ error: 'Erro ao buscar histórico de viagens.' });
-                        }
-    
-                        if (viagens.length === 0) {
-                            return res.status(404).json({ message: 'Nenhuma viagem encontrada.' });
-                        }
-    
-                        res.status(200).json({ historicoViagens: viagens });
-                    }
-                );
-            }
-        );
-    }
-    
-      
 
-    adicionarSaldo(req, res) {
+    async getHistoricoViagens(req, res) {
         const { idUser } = req.params;
-        const { valorAdicionado } = req.body; // Valor a ser adicionado ao saldo
-        // Converta o valorAdicionado para float
+
+        try {
+            const connection = await getConnection();
+            const [cartaoResults] = await connection.query(
+                'SELECT * FROM cartoes WHERE idUser = ?',
+                [idUser]
+            );
+            if (cartaoResults.length === 0) {
+                return res.status(404).json({ error: 'Cartão não encontrado.' });
+            }
+            const idCartao = cartaoResults[0].id;
+            const [viagens] = await connection.query(
+                'SELECT * FROM viagens WHERE idCartao = ? ORDER BY data DESC',
+                [idCartao]
+            );
+            if (viagens.length === 0) {
+                return res.status(404).json({ message: 'Nenhuma viagem encontrada.' });
+            }
+            res.status(200).json({ historicoViagens: viagens });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro ao buscar histórico de viagens.' });
+        }
+    }
+
+    async adicionarSaldo(req, res) {
+        const { idUser } = req.params;
+        const { valorAdicionado } = req.body;
         const valorAdicionadoFloat = parseFloat(valorAdicionado);
+
         if (isNaN(valorAdicionadoFloat)) {
             return res.status(400).json({ error: 'Valor inválido para adição de saldo.' });
         }
-        
-        // Busca o cartão do usuário
-        database.query(
-            'SELECT * FROM optbusao.cartoes WHERE idUser = ?',
-            [idUser],
-            (err, results) => {
-                if (err || results.length === 0) {
-                    console.error(err);
-                    return res.status(500).json({ error: 'Erro ao buscar cartão ou cartão não encontrado.' });
-                }
-    
-                const saldoAtual = results[0].valor;
-                const novoSaldo = saldoAtual + valorAdicionadoFloat;
-                // Atualiza o saldo do cartão
-                database.query(
-                    'UPDATE optbusao.cartoes SET valor = ? WHERE idUser = ?',
-                    [novoSaldo, idUser],
-                    (err, updateResults) => {
-                        if (err) {
-                            console.error(err);
-                            return res.status(500).json({ error: 'Erro ao adicionar saldo.' });
-                        }
-                        res.status(200).json({ message: 'Saldo adicionado com sucesso.', novoSaldo: novoSaldo });
-                    }
-                );
-            }
-        );
-    }
-    
-    
 
+        try {
+            const connection = await getConnection();
+            const [cartaoResults] = await connection.query(
+                'SELECT * FROM cartoes WHERE idUser = ?',
+                [idUser]
+            );
+
+            if (cartaoResults.length === 0) {
+                return res.status(404).json({ error: 'Cartão não encontrado.' });
+            }
+
+            const cartao = cartaoResults[0];
+            const hoje = new Date();
+            const dataVencimento = new Date(cartao.dataVencimento);
+
+            if (hoje > dataVencimento) {
+                // Cartão vencido, não pode adicionar saldo
+                return res.status(403).json({ 
+                    error: 'Cartão expirado. Envie uma solicitação de renovação.'
+                });
+            } // Cartão ativo, atualiza o saldo
+            const novoSaldo = cartao.valor + valorAdicionadoFloat;
+            await connection.query(
+                'UPDATE cartoes SET valor = ? WHERE idUser = ?',
+                [novoSaldo, idUser]
+            );
+
+            res.status(200).json({ message: 'Saldo adicionado com sucesso.', novoSaldo });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro ao adicionar saldo.' });
+        }
+    }
 }
 
-module.exports = new CartaoController;
+module.exports = new CartaoNodel();
 module.exports.upload = upload;

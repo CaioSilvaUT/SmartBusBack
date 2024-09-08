@@ -1,9 +1,11 @@
 const mysql = require('mysql2/promise');
 
+let connection;
+
 async function initDB() {
     try {
         // Conectar ao MySQL
-        const connection = await mysql.createConnection({
+        connection = await mysql.createConnection({
             host: 'localhost',
             user: 'root',
             password: '',
@@ -105,15 +107,20 @@ async function initDB() {
         `);
 
         console.log('Database initialized');
-
-        // Encerrar a conexão
-        await connection.end();
     } catch (err) {
         console.error('Erro ao inicializar o banco de dados:', err);
     }
 }
 
-// Executar a função de inicialização
+async function getConnection() {
+    if (!connection) {
+        await initDB();
+    }
+    return connection;
+}
+
+// Inicializar o banco de dados ao iniciar o módulo
 initDB();
 
-module.exports = initDB;
+// Exportar apenas getConnection
+module.exports = { getConnection };

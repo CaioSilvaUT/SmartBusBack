@@ -1,46 +1,43 @@
-const connection = require("../database/connection");
 const express = require("express");
 const router = express.Router();
-const UsuarioController = require("../Model/Usuario.js");
-const NotificacaoController = require("../Model/Notificacao.js");
-const CartaoController = require("../Model/Cartao.js");
+const UsuarioModel = require("../Model/Usuario"); // Corrigido para "Usuario"
+const NotificacaoModel = require("../Model/Notificacao"); // Corrigido para "Notificacao"
+const CartaoModel = require("../Model/Cartao"); // Corrigido para "Cartao"
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // Diretório de destino para os arquivos
 
-router.post("/login", UsuarioController.login);
-router.post("/newUser", UsuarioController.newUser);
-router.get("/showUser", UsuarioController.showUser);
-router.get("/showUserId/:id", UsuarioController.showUserById);
-router.delete("/deleteUser/:id", UsuarioController.deleteUser);
-router.put("/updateUser/:id", UsuarioController.updateUser);
+// Rotas para Usuário
+router.post("/login", UsuarioModel.login);
+router.post("/newUser", UsuarioModel.newUser);
+router.get("/showUser", UsuarioModel.showUser);
+router.get("/showUserId/:id", UsuarioModel.showUserById);
+router.delete("/deleteUser/:id", UsuarioModel.deleteUser);
+router.put("/updateUser/:id", UsuarioModel.updateUser);
 
-router.post("/createNotificacao", NotificacaoController.create);
-router.get("/getByIdNotificacao/:id", NotificacaoController.getById);
-router.get("/getNotificacaoByUserId/:idUser", NotificacaoController.getByUserId);
-router.delete("/deleteNotificacao/:id", NotificacaoController.delete);
-router.get("/getAllNotifi", NotificacaoController.getAll);
+// Rotas para Notificação
+router.post("/createNotificacao", NotificacaoModel.create);
+router.get("/getByIdNotificacao/:id", NotificacaoModel.getById);
+router.get("/getNotificacaoByUserId/:idUser", NotificacaoModel.getByUserId);
+router.delete("/deleteNotificacao/:id", NotificacaoModel.delete);
+router.get("/getAllNotifi", NotificacaoModel.getAll);
 
-router.post("/createTable", CartaoController.createTable);
-router.post("/createCartao", CartaoController.create);
-router.get("/getByIdCartao/:id", CartaoController.getById);
-router.get("/getByIdUserCartao/:id", CartaoController.getByIdUser);
-router.delete("/deleteCartao/:id", CartaoController.delete);
-router.put("/debitar/:idUser", CartaoController.debitar);
-router.get("/historicoViagens/:idUser", CartaoController.getHistoricoViagens);
+// Rotas para Cartão
+router.post("/createCartao", CartaoModel.create);
+router.get("/getByIdCartao/:id", CartaoModel.getById);
+router.get("/getByIdUserCartao/:id", CartaoModel.getByIdUser);
+router.delete("/deleteCartao/:id", CartaoModel.delete);
+router.put("/debitar/:idCartao", CartaoModel.debitar);
+router.get("/historicoViagens/:idUser", CartaoModel.getHistoricoViagens);
 
 
 // Rota para upload de PDF e solicitação de cartão
-router.post(
-  "/solicitarCartao/:idUser",
-  upload.single("file"),
-  CartaoController.solicitarCartao
-);
+router.post("/solicitarCartao/:idUser", upload.single("file"), CartaoModel.solicitarCartao);
 
 // Rotas para o administrador
-router.get("/solicitacoesPendentes", CartaoController.getSolicitacoesPendentes);
-router.put("/processarSolicitacao/:id", CartaoController.processarSolicitacao);
+router.get("/solicitacoesPendentes", CartaoModel.getSolicitacoesPendentes);
+router.put("/processarSolicitacao/:id", CartaoModel.processarSolicitacao);
 
 // Rota para adicionar saldo
-router.post("/adicionarSaldo/:idUser", CartaoController.adicionarSaldo);
+router.post("/adicionarSaldo/:idUser", CartaoModel.adicionarSaldo);
 
 module.exports = router;
