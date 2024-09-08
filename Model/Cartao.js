@@ -278,6 +278,41 @@ class CartaoController {
         });
     }
     
+    getHistoricoViagens(req, res) {
+        const { idUser } = req.params;
+    
+        // Busca o cartão do usuário
+        database.query(
+            'SELECT * FROM optbusao.cartoes WHERE idUser = ?',
+            [idUser],
+            (err, results) => {
+                if (err || results.length === 0) {
+                    console.error(err);
+                    return res.status(500).json({ error: 'Erro ao buscar cartão ou cartão não encontrado.' });
+                }   
+                const idCartao = results[0].id;
+                database.query(
+                    'SELECT * FROM optbusao.viagens WHERE idCartao = ? ORDER BY data DESC',
+                    [idCartao],
+                    (err, viagens) => {
+                        if (err) {
+                            console.error(err);
+                            return res.status(500).json({ error: 'Erro ao buscar histórico de viagens.' });
+                        }
+    
+                        if (viagens.length === 0) {
+                            return res.status(404).json({ message: 'Nenhuma viagem encontrada.' });
+                        }
+    
+                        res.status(200).json({ historicoViagens: viagens });
+                    }
+                );
+            }
+        );
+    }
+    
+      
+
     adicionarSaldo(req, res) {
         const { idUser } = req.params;
         const { valorAdicionado } = req.body; // Valor a ser adicionado ao saldo

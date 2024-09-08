@@ -89,6 +89,20 @@ async function initDB() {
                 FOREIGN KEY (idCartao) REFERENCES cartoes(id)
             );
         `);
+        await connection.query(`
+            CREATE TABLE IF NOT EXISTS historico_viagens (
+                id INT(11) NOT NULL AUTO_INCREMENT,
+                idUser INT(11) NOT NULL,
+                idCartao INT(11) NOT NULL,
+                data_viagem DATETIME NOT NULL,
+                origem VARCHAR(255) NOT NULL,
+                destino VARCHAR(255) NOT NULL,
+                valor DOUBLE NOT NULL,
+                PRIMARY KEY (id),
+                FOREIGN KEY (idUser) REFERENCES usuarios(id),
+                FOREIGN KEY (idCartao) REFERENCES cartoes(id)
+                );
+        `);
 
         console.log('Database initialized');
 
