@@ -9,13 +9,15 @@ async function initDB() {
             host: 'localhost',
             user: 'root',
             password: '',
-            database: 'eng'
         });
 
         // Criação do banco de dados, se não existir
         await connection.query(`CREATE DATABASE IF NOT EXISTS eng`);
 
-        // Criação das tabelas, se não existirem
+        // Conectar ao banco de dados recém-criado ou existente
+        await connection.query(`USE eng`);
+
+        
         await connection.query(`
             CREATE TABLE IF NOT EXISTS usuarios (
                 id INT(11) NOT NULL AUTO_INCREMENT,
@@ -23,7 +25,6 @@ async function initDB() {
                 email VARCHAR(100) NOT NULL UNIQUE,
                 senha VARCHAR(255) NOT NULL,
                 telefone VARCHAR(15) DEFAULT NULL,
-                cpf VARCHAR(14) NOT NULL,
                 is_adm TINYINT(1) DEFAULT NULL,
                 PRIMARY KEY (id)
             );
@@ -91,6 +92,7 @@ async function initDB() {
                 FOREIGN KEY (idCartao) REFERENCES cartoes(id)
             );
         `);
+
         await connection.query(`
             CREATE TABLE IF NOT EXISTS historico_viagens (
                 id INT(11) NOT NULL AUTO_INCREMENT,
@@ -103,7 +105,7 @@ async function initDB() {
                 PRIMARY KEY (id),
                 FOREIGN KEY (idUser) REFERENCES usuarios(id),
                 FOREIGN KEY (idCartao) REFERENCES cartoes(id)
-                );
+            );
         `);
 
         console.log('Database initialized');
