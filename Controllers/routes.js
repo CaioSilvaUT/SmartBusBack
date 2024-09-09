@@ -5,6 +5,10 @@ const NotificacaoModel = require("../Model/Notificacao"); // Corrigido para "Not
 const CartaoModel = require("../Model/Cartao"); // Corrigido para "Cartao"
 const multer = require("multer");
 const upload = multer({ dest: "uploads/" }); // Diretório de destino para os arquivos
+const upload = require("./multerConfig"); // Importar a configuração do multer
+
+// Servir arquivos estáticos da pasta 'uploads'
+router.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Rotas para Usuário
 router.post("/login", UsuarioModel.login);
@@ -29,9 +33,12 @@ router.delete("/deleteCartao/:id", CartaoModel.delete);
 router.put("/debitar/:idCartao", CartaoModel.debitar);
 router.get("/historicoViagens/:idUser", CartaoModel.getHistoricoViagens);
 
-
 // Rota para upload de PDF e solicitação de cartão
-router.post("/solicitarCartao/:idUser", upload.single("file"), CartaoModel.solicitarCartao);
+router.post(
+  "/solicitarCartao/:idUser",
+  upload.single("file"),
+  CartaoModel.solicitarCartao
+);
 
 // Rotas para o administrador
 router.get("/solicitacoesPendentes", CartaoModel.getSolicitacoesPendentes);
