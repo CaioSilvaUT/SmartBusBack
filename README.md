@@ -11,11 +11,11 @@ O backend do **SmartBus** segue a arquitetura **MVC** (Model-View-Controller), a
 
 ### **Model-View-Controller (MVC)**
 
-- **Model (Modelo):** Representa a lógica de negócios e manipulação dos dados. Os modelos contêm métodos que lidam diretamente com o banco de dados, como consultas, inserções e atualizações. Exemplo: `CartaoModel` manipula os dados da tabela de cartões.
+- **Model (Modelo):** Representa a lógica de negócios e manipulação dos dados. Os modelos contêm métodos que lidam diretamente com o banco de dados, como consultas, inserções e atualizações. Exemplo: `Model/Cartao.js` manipula os dados da tabela de cartões.
   
 - **View (Visão):** No contexto de uma API, a "View" é representada pelas respostas que a API retorna, em JSON ou outro formato adequado. Essas respostas são consumidas pelo frontend.
   
-- **Controller (Controlador):** O controlador é responsável por receber as requisições do cliente, interagir com os modelos e devolver uma resposta apropriada. Exemplo: o arquivo `routes.js` define as rotas e mapeia as requisições HTTP para os métodos dos modelos.
+- **Controller (Controlador):** O controlador é responsável por receber as requisições do cliente, interagir com os modelos e devolver uma resposta apropriada. Exemplo: o arquivo `Controllers/routes.js` define as rotas e mapeia as requisições HTTP para os métodos dos modelos.
 
 ## **Design patterns**
 
@@ -62,7 +62,6 @@ Aqui, diferentes modelos são criados para cada entidade (usuário, notificaçã
 
 ```bash
 git clone https://github.com/CaioSilvaUT/SmartBusBack.git
-cd smartbus-backend
 ```
 
 ### 2. Instalar as dependências
