@@ -213,14 +213,32 @@ class CartaoModel {
     const pdfPath = req.file.path;
     try {
       const connection = await getConnection();
-      const query = `
-                INSERT INTO solicitacoes_cartao (idUser, pdfPath, tipo, status) 
-                VALUES (?, ?, ?, 'pendente')
-            `;
-      const [results] = await connection.query(query, [idUser, pdfPath, tipo]);
+
+      // Verifica se já existe uma solicitação pendente para o usuário
+      const checkQuery =
+        'SELECT COUNT(*) AS count FROM solicitacoes_cartao WHERE idUser = ? AND status = "pendente"';
+      const [checkResults] = await connection.query(checkQuery, [idUser]);
+
+      if (checkResults[0].count > 0) {
+        return res
+          .status(400)
+          .json({ error: "Você já tem uma solicitação de cartão pendente." });
+      }
+
+      // Se não houver solicitação pendente, cria uma nova solicitação
+      const insertQuery = `
+        INSERT INTO solicitacoes_cartao (idUser, pdfPath, tipo, status) 
+        VALUES (?, ?, ?, 'pendente')
+      `;
+      const [insertResults] = await connection.query(insertQuery, [
+        idUser,
+        pdfPath,
+        tipo,
+      ]);
+
       res.status(201).json({
         message: "Solicitação de cartão enviada com sucesso!",
-        requestId: results.insertId,
+        requestId: insertResults.insertId,
       });
     } catch (err) {
       console.error(err);
