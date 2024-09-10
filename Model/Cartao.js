@@ -17,7 +17,7 @@ const upload = multer({
     }
 });
 
-class CartaoNodel {
+class CartaoModel {
     async create(req, res) {
         const { idUser, dataCriacao, dataVencimento, valor, tipo } = req.body;
 
@@ -323,5 +323,5 @@ class CartaoNodel {
     }
 }
 
-module.exports = new CartaoNodel();
+module.exports = new CartaoModel();
 module.exports.upload = upload;
