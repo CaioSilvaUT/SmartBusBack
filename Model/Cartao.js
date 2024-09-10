@@ -153,30 +153,33 @@ class CartaoModel {
 
     async solicitarCartao(req, res) {
         const { idUser } = req.params;
-        const { tipo } = req.body; // Obtenha o tipo do cartão do corpo da requisição
-
+        const { tipo, valor } = req.body; // Obtenha o tipo e valor do corpo da requisição
+        // Verifica se o arquivo foi enviado
         if (!req.file) {
             return res.status(400).json({ error: 'Nenhum arquivo foi enviado.' });
         }
-
+    
         if (!tipo) {
             return res.status(400).json({ error: 'O tipo de cartão é obrigatório.' });
         }
-
-        const pdfPath = req.file.path;
-
-        try {
-            const connection = await getConnection();
-            const query = `
-                INSERT INTO solicitacoes_cartao (idUser, pdfPath, tipo, status) 
-                VALUES (?, ?, ?, 'pendente')
-            `;
-            const [results] = await connection.query(query, [idUser, pdfPath, tipo]);
-            res.status(201).json({ message: 'Solicitação de cartão enviada com sucesso!', requestId: results.insertId });
-        } catch (err) {
-            console.error(err);
-            res.status(500).json({ error: 'Erro ao salvar a solicitação.' });
+    
+        if (valor === undefined || isNaN(parseFloat(valor))) {
+            return res.status(400).json({ error: 'O valor é obrigatório e deve ser um número.' });
         }
+        
+        const pdfPath = req.file.path;
+        // Insere a solicitação no banco de dados
+        const query = `
+            INSERT INTO solicitacoes_cartao (idUser, pdfPath, tipo, valor, status) 
+            VALUES (?, ?, ?, ?, 'pendente')
+        `;
+        database.query(query, [idUser, pdfPath, tipo, valor], (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Erro ao salvar a solicitação.' });
+            }
+            res.status(201).json({ message: 'Solicitação de cartão enviada com sucesso!', requestId: results.insertId });
+        });
     }
 
     async getSolicitacoesPendentes(req, res) {
@@ -192,65 +195,58 @@ class CartaoModel {
         }
     }
 
-    processarSolicitacao(req, res) {
+    async processarSolicitacao(req, res) {
         const { id } = req.params;
         const { status, valor } = req.body; // 'aprovado' ou 'rejeitado', e valor a ser adicionado
         if (!['aprovado', 'rejeitado'].includes(status)) {
             return res.status(400).json({ error: 'Status inválido.' });
         }
-        
+    
         const queryUpdateStatus = 'UPDATE solicitacoes_cartao SET status = ? WHERE id = ?';
-        
-        // Primeiro, atualizamos o status da solicitação
-        database.query(queryUpdateStatus, [status, id], (err, results) => {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Erro ao processar a solicitação.' });
-            }
-        
+    
+        try {
+            const connection = await getConnection();
+    
+            // Primeiro, atualizamos o status da solicitação
+            await connection.query(queryUpdateStatus, [status, id]);
+    
             // Se a solicitação for aprovada, criamos o cartão
             if (status === 'aprovado') {
                 const queryGetSolicitacao = 'SELECT idUser, tipo FROM solicitacoes_cartao WHERE id = ?';
-                
-                database.query(queryGetSolicitacao, [id], (err, results) => {
-                    if (err || results.length === 0) {
-                        console.error(err);
-                        return res.status(500).json({ error: 'Erro ao buscar detalhes da solicitação.' });
-                    }
-        
-                    const { idUser, tipo } = results[0];
-                    const dataCriacao = new Date(); // data atual
-                    const dataVencimento = new Date();
-                    dataVencimento.setFullYear(dataVencimento.getFullYear() + 1); // 1 ano de validade
-                    const valorInicial = 0.0; // Usar valor da solicitação, se disponível
-
-                    // Cria o cartão
-                    const queryCreateCartao = 
-                        'INSERT INTO optbusao.cartoes (idUser, dataCriacao, dataVencimento, valor, tipo) VALUES (?, ?, ?, ?, ?)';
-        
-                    database.query(queryCreateCartao, [idUser, dataCriacao, dataVencimento, valorInicial, tipo], (err, results) => {
-                        if (err) {
-                            console.error(err);
-                            return res.status(500).json({ error: 'Erro ao criar o cartão.' });
-                        }
-
-                        // Adiciona valor ao cartão (caso tenha sido especificado)
-                        const queryAddValor = 'UPDATE optbusao.cartoes SET valor = valor + ? WHERE idUser = ?';
-        
-                        database.query(queryAddValor, [valor, idUser], (err) => {
-                            if (err) {
-                                console.error(err);
-                                return res.status(500).json({ error: 'Erro ao adicionar valor ao cartão.' });
-                            }
-                            res.json({ message: `Solicitação aprovada, cartão criado e saldo adicionado com sucesso para o usuário ${idUser}.` });
-                        });
-                    });
-                });
+    
+                const [results] = await connection.query(queryGetSolicitacao, [id]);
+                if (results.length === 0) {
+                    return res.status(404).json({ error: 'Solicitação não encontrada.' });
+                }
+    
+                const { idUser, tipo } = results[0];
+                const dataCriacao = new Date(); // data atual
+                const dataVencimento = new Date();
+                dataVencimento.setFullYear(dataVencimento.getFullYear() + 1); // 1 ano de validade
+                const valorInicial = 0.0; // Valor inicial do cartão
+    
+                // Cria o cartão
+                const queryCreateCartao = 
+                    'INSERT INTO cartoes (idUser, dataCriacao, dataVencimento, valor, tipo) VALUES (?, ?, ?, ?, ?)';
+            
+                await connection.query(queryCreateCartao, [idUser, dataCriacao, dataVencimento, valorInicial, tipo]);
+    
+                // Adiciona valor ao cartão (caso tenha sido especificado)
+                if (valor) {
+                    const queryAddValor = 'UPDATE cartoes SET valor = valor + ? WHERE idUser = ?';
+                    await connection.query(queryAddValor, [valor, idUser]);
+                }
+    
+                res.json({ message: `Solicitação aprovada, cartão criado e saldo adicionado com sucesso para o usuário ${idUser}.` });
             } else {
                 res.json({ message: `Solicitação ${status} com sucesso.` });
             }
-        });
+        } catch (err) {
+            console.error(err);
+            res.status(500).json({ error: 'Erro ao processar a solicitação.' });
+        }
     }
+    
 
     async getHistoricoViagens(req, res) {
         const { idUser } = req.params;
@@ -266,7 +262,7 @@ class CartaoModel {
             }
             const idCartao = cartaoResults[0].id;
             const [viagens] = await connection.query(
-                'SELECT * FROM viagens WHERE idCartao = ? ORDER BY data DESC',
+                'SELECT * FROM historico_viagens WHERE idCartao = ? ORDER BY data DESC',
                 [idCartao]
             );
             if (viagens.length === 0) {
