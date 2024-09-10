@@ -9,6 +9,7 @@ async function initDB() {
             host: 'localhost',
             user: 'root',
             password: '',
+            charset: 'utf8mb4',
         });
 
         // Criação do banco de dados, se não existir
@@ -124,5 +125,4 @@ async function getConnection() {
 // Inicializar o banco de dados ao iniciar o módulo
 initDB();
 
-// Exportar apenas getConnection
-module.exports = { getConnection };
+module.exports = { getConnection};

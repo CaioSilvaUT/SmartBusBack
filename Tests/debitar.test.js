@@ -1,8 +1,7 @@
-// debitar.test.js
 const CartaoModel = require("../Model/Cartao"); // Corrigido para "Cartao"
-const { getConnection } = require('../database/connection');
+const { getConnection, initDB } = require('../database/connection');
 
-jest.mock('./caminho_para_o_arquivo_de_conexao'); // Mock da conexão do banco de dados
+jest.mock('../database/connection');
 
 describe('CartaoModel.debitar', () => {
     let req;
@@ -35,7 +34,7 @@ describe('CartaoModel.debitar', () => {
             .mockResolvedValueOnce(null) // Mock da atualização do saldo do cartão
             .mockResolvedValueOnce(null); // Mock da inserção no histórico
 
-        await CartaoController.debitar(req, res);
+        await CartaoModel.debitar(req, res);
 
         expect(res.status).toHaveBeenCalledWith(200);
         expect(res.json).toHaveBeenCalledWith({ message: 'Débito realizado com sucesso!', cardId: 1 });
@@ -65,7 +64,7 @@ describe('CartaoModel.debitar', () => {
         // Mock da query para retornar nenhum cartão
         mockConnection.query.mockResolvedValueOnce([[]]);
 
-        await CartaoController.debitar(req, res);
+        await CartaoModel.debitar(req, res);
 
         expect(res.status).toHaveBeenCalledWith(404);
         expect(res.json).toHaveBeenCalledWith({ error: 'Cartão não encontrado' });
@@ -81,7 +80,7 @@ describe('CartaoModel.debitar', () => {
         // Mock da query para retornar um cartão com saldo insuficiente
         mockConnection.query.mockResolvedValueOnce([[{ id: 1, valor: 1.00, idUser: 1 }]]);
 
-        await CartaoController.debitar(req, res);
+        await CartaoModel.debitar(req, res);
 
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith({ error: 'Saldo insuficiente' });
@@ -93,11 +92,7 @@ describe('CartaoModel.debitar', () => {
         };
 
         getConnection.mockResolvedValue(mockConnection);
-
-        // Mock de uma exceção sendo lançada durante a execução da query
-        mockConnection.query.mockRejectedValue(new Error('Erro interno'));
-
-        await CartaoController.debitar(req, res);
+        await CartaoModel.debitar(req, res);
 
         expect(res.status).toHaveBeenCalledWith(500);
         expect(res.json).toHaveBeenCalledWith({ error: 'Erro interno do servidor' });
