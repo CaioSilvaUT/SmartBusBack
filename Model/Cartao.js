@@ -262,7 +262,7 @@ class CartaoModel {
             }
             const idCartao = cartaoResults[0].id;
             const [viagens] = await connection.query(
-                'SELECT * FROM historico_viagens WHERE idCartao = ? ORDER BY data DESC',
+                'SELECT * FROM historico_viagens WHERE idCartao = ? ORDER BY data_viagem DESC',
                 [idCartao]
             );
             if (viagens.length === 0) {
