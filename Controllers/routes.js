@@ -51,7 +51,6 @@ router.post(
 // Rotas para o administrador
 router.get("/solicitacoesPendentes", CartaoModel.getSolicitacoesPendentes);
 router.put("/processarSolicitacao/:id", CartaoModel.processarSolicitacao);
-
 // Rota para adicionar saldo
 router.post("/adicionarSaldo/:idUser", CartaoModel.adicionarSaldo);
 
