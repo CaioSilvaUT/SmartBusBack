@@ -4,8 +4,19 @@ const UsuarioModel = require("../Model/Usuario"); // Corrigido para "Usuario"
 const NotificacaoModel = require("../Model/Notificacao"); // Corrigido para "Notificacao"
 const CartaoModel = require("../Model/Cartao"); // Corrigido para "Cartao"
 const multer = require("multer");
-const upload = multer({ dest: "uploads/" }); // Diretório de destino para os arquivos
-
+const load = multer({ dest: "uploads/" }); // Diretório de destino para os arquivos
+const upload = require("./multerConfig"); // Importar a configuração do multer
+const path = require("path");
+// Servir arquivos estáticos da pasta 'uploads'
+router.get("/baixarPdf/:pdfPath", (req, res) => {
+  const pdfPath = req.params.pdfPath;
+  const fullPath = path.join(__dirname, "../uploads", pdfPath);
+  res.download(fullPath, (err) => {
+    if (err) {
+      return res.status(500).json({ error: "Erro ao baixar o arquivo." });
+    }
+  });
+});
 // Rotas para Usuário
 router.post("/login", UsuarioModel.login);
 router.post("/newUser", UsuarioModel.newUser);
@@ -13,7 +24,7 @@ router.get("/showUser", UsuarioModel.showUser);
 router.get("/showUserId/:id", UsuarioModel.showUserById);
 router.delete("/deleteUser/:id", UsuarioModel.deleteUser);
 router.put("/updateUser/:id", UsuarioModel.updateUser);
-router.post('/logout', UsuarioModel.logoutUser);
+router.post("/logout", UsuarioModel.logoutUser);
 
 // Rotas para Notificação
 router.post("/createNotificacao", NotificacaoModel.create);
@@ -30,9 +41,12 @@ router.delete("/deleteCartao/:id", CartaoModel.delete);
 router.put("/debitar/:idCartao", CartaoModel.debitar);
 router.get("/historicoViagens/:idUser", CartaoModel.getHistoricoViagens);
 
-
 // Rota para upload de PDF e solicitação de cartão
-router.post("/solicitarCartao/:idUser", upload.single("file"), CartaoModel.solicitarCartao);
+router.post(
+  "/solicitarCartao/:idUser",
+  load.single("file"),
+  CartaoModel.solicitarCartao
+);
 
 // Rotas para o administrador
 router.get("/solicitacoesPendentes", CartaoModel.getSolicitacoesPendentes);
