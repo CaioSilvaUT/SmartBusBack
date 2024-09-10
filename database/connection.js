@@ -36,7 +36,7 @@ async function initDB() {
                 idUser INT(11) NOT NULL,
                 dataCriacao DATE NOT NULL,
                 dataVencimento DATE NOT NULL,
-                valor DOUBLE NOT NULL,
+                valor DOUBLE NOT NULL DEFAULT 0.00,
                 tipo INT(11) NOT NULL,
                 PRIMARY KEY (id),
                 FOREIGN KEY (idUser) REFERENCES usuarios(id)
