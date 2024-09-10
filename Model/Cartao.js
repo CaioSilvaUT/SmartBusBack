@@ -112,38 +112,31 @@ class CartaoModel {
         const valor = 2.00;
     
         try {
-            const connection = await getConnection();
-    
+            const connection = await getConnection();    
             // Verifica se o cartão existe
             const [cartaoResults] = await connection.query(
                 'SELECT * FROM cartoes WHERE id = ?',
                 [idCartao]
-            );
-    
+            ); 
             if (cartaoResults.length === 0) {
                 return res.status(404).json({ error: 'Cartão não encontrado' });
-            }
-    
+            }    
             const cartao = cartaoResults[0];
             const saldoAtual = cartao.valor;
-            const novoSaldo = saldoAtual - valor;
-    
+            const novoSaldo = saldoAtual - valor;   
             if (novoSaldo < 0) {
                 return res.status(400).json({ error: 'Saldo insuficiente' });
-            }
-    
+            }   
             // Atualiza o saldo do cartão
             await connection.query(
                 'UPDATE cartoes SET valor = ? WHERE id = ?',
                 [novoSaldo, idCartao]
-            );
-    
+            );   
             // Registra a viagem no histórico
             await connection.query(
                 'INSERT INTO historico_viagens (idUser, idCartao, data_viagem, origem, destino, valor) VALUES (?, ?, NOW(), "UTFPR", "Terminal", ?)',
                 [cartao.idUser, idCartao, valor]
-            );
-    
+            );   
             res.status(200).json({ message: 'Débito realizado com sucesso!', cardId: idCartao });
         } catch (err) {
             console.error(err);
