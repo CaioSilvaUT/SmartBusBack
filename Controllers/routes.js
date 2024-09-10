@@ -13,6 +13,7 @@ router.get("/showUser", UsuarioModel.showUser);
 router.get("/showUserId/:id", UsuarioModel.showUserById);
 router.delete("/deleteUser/:id", UsuarioModel.deleteUser);
 router.put("/updateUser/:id", UsuarioModel.updateUser);
+router.post('/logout', UsuarioModel.logoutUser);
 
 // Rotas para Notificação
 router.post("/createNotificacao", NotificacaoModel.create);

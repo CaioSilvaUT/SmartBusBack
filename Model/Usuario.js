@@ -21,6 +21,15 @@ class UsuarioModel {
         }
     }
 
+
+    logoutUser = (req, res) => {
+        res.cookie('jwt', '', {
+          httpOnly: true,
+          expires: new Date(0),
+        });
+        res.status(200).json({ message: 'Usuário saiu com sucesso' });
+      }
+
     async login(req, res) {
         const { email, senha } = req.body;
 
