@@ -83,7 +83,7 @@ async function getConnection() {
         host: 'localhost',
         user: 'seu-usuario', //altere seu-usuario pelo usuario do seu banco de dados
         password: 'sua-senha', //altere sua-senha pela senha do seu banco de dados
-        database: 'eng' //caso deseje alterar o nome do database mudanças terão de ser feitas no arquivo database/connection.js
+        charset: 'utf8mb4',
     });
 }
 
